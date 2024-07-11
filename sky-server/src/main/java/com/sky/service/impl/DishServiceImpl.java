@@ -52,35 +52,85 @@ public class DishServiceImpl implements DishService {
     }
 
     /**
-     *
      * @param dishPageQueryDTO
      * @return
      */
     public PageResult pageQuery(DishPageQueryDTO dishPageQueryDTO) {
-        PageHelper.startPage(dishPageQueryDTO.getPage(),dishPageQueryDTO.getPageSize());
+        PageHelper.startPage(dishPageQueryDTO.getPage(), dishPageQueryDTO.getPageSize());
         Page<DishVO> page = dishMapper.pageQuery(dishPageQueryDTO);
-        return new PageResult(page.getTotal(),page.getResult());
+        return new PageResult(page.getTotal(), page.getResult());
     }
 
     /**
      * 菜品批量删除
+     *
      * @param ids
      */
     @Transactional
     public void deleteBatch(List<Long> ids) {
         for (Long id : ids) {
-            Dish dish  = dishMapper.getById(id);
-            if (dish.getStatus() == StatusConstant.ENABLE){
+            Dish dish = dishMapper.getById(id);
+            if (dish.getStatus() == StatusConstant.ENABLE) {
                 throw new DeletionNotAllowedException(MessageConstant.DISH_ON_SALE);
             }
         }
         List<Long> setmealIds = setmealDishMapper.getSetmealIdsByDishIds(ids);
-        if (setmealIds != null && setmealIds.size() > 0){
+        if (setmealIds != null && setmealIds.size() > 0) {
             throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
         }
-        for (Long id : ids) {
-            dishMapper.deleteById(id);
-            dishFlavorMapper.deleteByDishId(id);
+//        for (Long id : ids) {
+//            dishMapper.deleteById(id);
+//            dishFlavorMapper.deleteByDishId(id);
+//        }
+        dishMapper.deleteByIds(ids);
+        dishFlavorMapper.deleteByDishIds(ids);
+    }
+
+    /**
+     * 根据id查询菜品
+     *
+     * @param id
+     * @return
+     */
+    public DishVO getByIdWithFlavor(Long id) {
+        Dish dish = dishMapper.getById(id);
+        List<DishFlavor> dishFlavors = dishFlavorMapper.getByDishId(id);
+        DishVO dishVO = new DishVO();
+        BeanUtils.copyProperties(dish, dishVO);
+        dishVO.setFlavors(dishFlavors);
+        return dishVO;
+    }
+
+    /**
+     * 修改菜品
+     *
+     * @param dishDTO
+     */
+    public void updateWithFlavor(DishDTO dishDTO) {
+        Dish dish = new Dish();
+        BeanUtils.copyProperties(dishDTO, dish);
+        dishMapper.update(dish);
+        dishFlavorMapper.deleteByDishId(dishDTO.getId());
+        List<DishFlavor> flavors = dishDTO.getFlavors();
+        if (flavors != null && flavors.size() > 0) {
+            flavors.forEach(dishFlavor -> {
+                dishFlavor.setDishId(dishDTO.getId());
+            });
+            dishFlavorMapper.insertBatch(flavors);
         }
+    }
+
+    /**
+     * 根据分类id查询菜品
+     *
+     * @param categoryId
+     * @return
+     */
+    public List<Dish> list(Long categoryId) {
+        Dish dish = Dish.builder()
+                .categoryId(categoryId)
+                .status(StatusConstant.ENABLE)
+                .build();
+        return dishMapper.list(dish);
     }
 }
