@@ -143,7 +143,7 @@ public class ReportServiceImpl implements ReportService {
         LocalDate dateBegin = LocalDate.now().minusDays(30);
         LocalDate dateEnd = LocalDate.now().minusDays(1);
         BusinessDataVO businessDataVO = workspaceService.getBusinessData(LocalDateTime.of(dateBegin, LocalTime.MIN), LocalDateTime.of(dateEnd, LocalTime.MAX));
-        InputStream in = this.getClass().getClassLoader().getResourceAsStream("template/运营数据报表模板");
+        InputStream in = this.getClass().getClassLoader().getResourceAsStream("template/运营数据报表模板。xlsx");
         try {
             XSSFWorkbook excel = new XSSFWorkbook(in);
             XSSFSheet sheet = excel.getSheet("Sheet1");
